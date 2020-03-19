@@ -24,6 +24,9 @@ for sym in tickers:
         year_mean_sq_avg = daily_price[sym][str(year)].apply(lambda x: (x - avg_yearly_price)**2)
         num_trading_days = daily_price[sym][str(year)].size
         year_variance = year_mean_sq_avg.sum() / num_trading_days
+
+        # I normalize the yearly variance by the yearly mean here
+        year_variance /= avg_yearly_price
         yearly_variance.append(year_variance)
 
     # Weight the returns and variances for more recent years heavier than earlier years
@@ -34,6 +37,6 @@ for sym in tickers:
     print(sym)
     print("Expected return:")
     print(weighted_expected_return)
-    print("Expected variance:")
+    print("Expected normalized variance:")
     print(weighted_variance)
     print()
