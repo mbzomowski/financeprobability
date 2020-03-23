@@ -4,10 +4,15 @@ STARTING_YEAR = 2015
 END_YEAR = 2020
 
 # This list can be adjusted to include whatever securities are needed
-tickers = ['MSFT', 'KO', 'HAL']
+tickers = ['AMZN', 'KO', 'CMG']
 
 # Downloads daily historical data for all securities, 2015-2020
-data = yf.download(tickers, start='2015-01-01', end='2020-01-10', period='1d', threading=True)
+data = yf.download(
+    tickers,
+    start=str(STARTING_YEAR)+'-01-01',
+    end=str(END_YEAR)+'-01-10',
+    period='1d',
+    threading=True)
 
 # We will only use the adjusted close prices, as I believe they account for splits
 daily_price = data['Adj Close']
@@ -47,7 +52,7 @@ for sym in tickers:
 
 # Calculate the covariance between all combinations of securities
 for i in range(len(tickers)):
-    for j in range(i + 1, len(tickers)):
+    for j in range(len(tickers)):
         cov = 0
         print("Covariance between {} and {}".format(tickers[i], tickers[j]))
         for k in range(END_YEAR - STARTING_YEAR):
