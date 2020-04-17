@@ -1,62 +1,55 @@
 import yfinance as yf
+import numpy as np
+import pandas as pd
 
-STARTING_YEAR = 2015
+STARTING_YEAR = 2013
 END_YEAR = 2020
+TARGET = 0.015
 
 # This list can be adjusted to include whatever securities are needed
-tickers = ['AMZN', 'KO', 'CMG']
+tickers = ['TGT', 'TSLA', 'FB', 'GOOG', 'AMZN', 'AAL', 'AAPL', 'BABA', 'DAL', 'F', 'GM', 'LYFT', 'PFE', 'PG']
 
 # Downloads daily historical data for all securities, 2015-2020
 data = yf.download(
     tickers,
     start=str(STARTING_YEAR)+'-01-01',
-    end=str(END_YEAR)+'-01-10',
+    end=str(END_YEAR)+'-04-01',
     period='1d',
     threading=True)
 
 # We will only use the adjusted close prices, as I believe they account for splits
 daily_price = data['Adj Close']
+monthly_change = daily_price.resample('M').apply(lambda x: x[0]).pct_change()
 
 mean_security_returns = []
-yearly_security_returns = []
 
 for sym in tickers:
-    yearly_returns = []
-    for year in range(STARTING_YEAR, END_YEAR):
-        # Calculate the pct change for each year
-        current_year_start = daily_price[sym][str(year)].iloc[0]
-        next_year_start = daily_price[sym][str(year+1)].iloc[0]
-        security_return = (next_year_start - current_year_start) / current_year_start
-        yearly_returns.append(security_return)
+    mean_security_returns.append(monthly_change[sym].mean())
 
-    yearly_security_returns.append(yearly_returns)
-
-    # Weight the returns and variances for more recent years heavier than earlier years
-    mean_yearly_return = sum(yearly_returns) / (END_YEAR - STARTING_YEAR)
-
-    mean_security_returns.append(mean_yearly_return)
-
-    # Calculate the variance of the returns
-    return_variance = 0
-    for ret in yearly_returns:
-        return_variance += (ret - mean_yearly_return)**2
-    return_variance /= (END_YEAR - STARTING_YEAR - 1)
-
-    # Print data for each stock
-    print(sym)
-    print("Expected return:")
-    print(mean_yearly_return)
-    print("Expected variance of returns:")
-    print(return_variance)
-    print()
-
-# Calculate the covariance between all combinations of securities
+cov = []
 for i in range(len(tickers)):
+    row = []
     for j in range(len(tickers)):
-        cov = 0
-        print("Covariance between {} and {}".format(tickers[i], tickers[j]))
-        for k in range(END_YEAR - STARTING_YEAR):
-            cov += (yearly_security_returns[i][k] - mean_security_returns[i])\
-                * (yearly_security_returns[j][k] - mean_security_returns[j])
-        cov /= (END_YEAR - STARTING_YEAR - 1)
-        print(cov)
+        row.append(2 * monthly_change[tickers[i]].cov(monthly_change[tickers[j]]))
+    row.append(-1)
+    row.append(-1 * mean_security_returns[i])
+    cov.append(row)
+row = [1 for i in range(len(tickers))]
+row += [0, 0]
+cov.append(row)
+cov.append(mean_security_returns + [0, 0])
+
+k = [0 for i in range(len(tickers))] + [1, TARGET]
+
+A_inv = np.linalg.inv(cov)
+weights = np.matmul(A_inv, k)
+final = [tickers + ["lambda1", "lambda2"], weights]
+
+print("MEAN VALUES")
+print(pd.Series(mean_security_returns))
+print()
+print("COVARIANCE MATRIX:")
+print(pd.DataFrame(cov))
+print()
+print("WEIGHTS")
+print(pd.DataFrame(final))
