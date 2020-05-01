@@ -1,0 +1,1 @@
+returnvariance.py is used to calculate the weights for a given portfolio with a given return. There is a specific adjustment for short-selling.
